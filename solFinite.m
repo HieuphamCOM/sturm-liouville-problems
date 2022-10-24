@@ -1,40 +1,45 @@
 classdef solFinite
     properties (Access = public)
         u;
-        f;
     end
     
     methods
-        function soln = solFinite()
-
+        function soln = solFinite(prob)
+            soln = soln.computeSol(prob);
+            plot(prob.x, soln.u)
         end % end of solFinite
         
         function soln = computeSol(soln,prob)
-            soln.u = zeros(length(prob.x), 1);
-            soln.u(1) = 0;
-            soln.u(end) = 0;
-            soln.f = zeros(length(prob.x), 1);
-            for i = 1 : length(prob.x)
-               soln.f(i) = prob.f(i * prob.h); 
+
+            soln.u = zeros(prob.n+2,1);
+            for i = 1 : prob.n 
+               f(i,1) = prob.f(i * prob.h) ;
+               pp(i,1) = prob.p(i * prob.h + 0.5 * prob.h);
+               pm(i,1) = prob.p(i * prob.h - 0.5 * prob.h);
+               q(i,1) = prob.p(i * prob.h);
             end
-            solnum1 = soln.u(end);
-            soln.u(2) = (soln.f(2)+ prob.p(i * prob.h - 0.5* prob.h) * solnum1 / (prob.h)^2 ...
-               - ((prob.p(2 * prob.h - 0.5* prob.h)+prob.p(2 * prob.h + 0.5* prob.h))/(prob.h)^2 +prob.q(2*prob.h))*soln.u(1) )...
-               * (-1 * prob.p(2 * prob.h + 0.5* prob.h)/(prob.h)^2)^-1;             
-            for i = 3: length(prob.x)
-               soln.u(i) = (soln.f(i)+ prob.p(i * prob.h - 0.5* prob.h) * soln.u(i-2) / (prob.h)^2 ...
-                   - ((prob.p(i * prob.h - 0.5* prob.h)+prob.p(i * prob.h + 0.5* prob.h))/(prob.h)^2 +prob.q(i*prob.h))*soln.u(i-1) )...
-                   * (-1 * prob.p(i * prob.h + 0.5* prob.h)/(prob.h)^2)^-1 ;
-            end            
+            
+            % Define tridiagonal matrix
+            matrixA = zeros(prob.n, prob.n);
+            for i = 1 : prob.n 
+                matrixA(i,i) = (1/prob.h^2) * (pm(i)+pp(i)) + q(i);
+                for j = 1 : prob.n -1
+                   matrixA(j+1,j) = -1/prob.h^2 * pm(i) ;
+                end
+                
+                for k = 1:prob.n -1
+                   matrixA(k,k+1)  = -1/prob.h^2 * pp(i) ;
+                end
+            end % end of loop over tridiagonal matrix
+
+            % Assign solution to the soln.uu array
+            u = linsolve(matrixA,f);
+            for e = 2: prob.n+1
+               soln.u(e) = u(e-1);
+            end % end of loop over solution
+
         end % end of computeSol
-        
-        function soln = solve(soln, prob)
-            soln = soln.computeSol(prob);
-            plot(prob.x, soln.u,...
-                prob.x, soln.f)
-            legend('u', 'f')
-        end % end of solve
-        
+
     end % end of methods
  
-end
+end % end of classdef
